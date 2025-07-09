@@ -18,7 +18,7 @@ func RunMigrations() error {
 	}
 
 	m, err := migrate.New(
-		"file://server/migrations", // relative to repo root
+		"file://migrations",
 		"mysql://"+dsn,
 	)
 	if err != nil {

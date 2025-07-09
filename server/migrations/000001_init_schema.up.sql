@@ -1,7 +1,7 @@
 CREATE TABLE urls (
   id            BIGINT PRIMARY KEY AUTO_INCREMENT,
-  original_url  VARCHAR(2048) NOT NULL UNIQUE,
-  status        ENUM('queued','running','done','error') DEFAULT 'queued',
+  original_url VARCHAR(768) NOT NULL UNIQUE,
+  crawl_status        ENUM('queued','running','done','error') DEFAULT 'queued',
   html_version  VARCHAR(16),
   title         VARCHAR(512),
   h1            INT DEFAULT 0,
@@ -19,7 +19,7 @@ CREATE TABLE links (
   id         BIGINT PRIMARY KEY AUTO_INCREMENT,
   url_id     BIGINT NOT NULL,
   href       VARCHAR(2048) NOT NULL,
-  status     SMALLINT,
+  http_status     SMALLINT,
   is_internal BOOL,
   checked_at TIMESTAMP NULL,
   CONSTRAINT fk_url FOREIGN KEY (url_id)

@@ -1,13 +1,19 @@
-# ── builder ────────────────────────────────────────────────
-FROM golang:1.24.5-alpine AS builder
+# ---------- builder ----------
+FROM golang:1.24-alpine AS builder
 WORKDIR /app
 COPY server/go.* ./
 RUN go mod download
 COPY server/. .
+# we already have the migrations in /app/migrations at this point
 RUN CGO_ENABLED=0 go build -o /bin/api ./cmd/api
 
-# ── runner ────────────────────────────────────────────────
+# ---------- runner ----------
 FROM alpine:3.20
+WORKDIR /
 COPY --from=builder /bin/api /bin/api
+
+# 👇  add this line so the folder exists when the binary starts
+COPY --from=builder /app/migrations ./migrations
+
 EXPOSE 8080
 ENTRYPOINT ["/bin/api"]
