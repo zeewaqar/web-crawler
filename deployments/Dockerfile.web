@@ -2,24 +2,35 @@
 FROM --platform=linux/amd64 node:20-slim AS deps
 WORKDIR /web
 COPY client/package*.json ./
-# 👇  install *all* deps; we’ll prune later
-RUN npm ci               #  ⬅ remove --omit=dev
+# Install ALL deps (dev-deps are needed for Tailwind / Lightning CSS)
+RUN npm ci
 
 # ---------- builder ----------
 FROM --platform=linux/amd64 node:20-slim AS builder
 WORKDIR /web
+# Re-use Linux-built node_modules from the deps stage
 COPY --from=deps /web/node_modules ./node_modules
+# Copy the full source
 COPY client/. .
-RUN npm run build        # succeeds because tailwind/postcss are present
+# Produce the standalone bundle (requires `output: 'standalone'` in next.config)
+RUN npm run build
 
 # ---------- runner ----------
 FROM --platform=linux/amd64 node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-# Optional: slim node_modules that Next copied into .next/standalone
+
+# Optional: slim any deps that Next copied into .next/standalone
 RUN npm prune --production || true
-COPY --from=builder /web/.next ./.next
+
+# 1️⃣ Standalone server bundle + minimal node_modules
+COPY --from=builder /web/.next/standalone ./
+
+# 2️⃣ Next.js static chunks & CSS
+COPY --from=builder /web/.next/static ./.next/static
+
+# 3️⃣ Public assets (images, favicon, robots.txt, …)
 COPY --from=builder /web/public ./public
-COPY --from=builder /web/package*.json ./
+
 EXPOSE 3000
-CMD ["node", ".next/standalone/server.js"]
+CMD ["node", "server.js"]
