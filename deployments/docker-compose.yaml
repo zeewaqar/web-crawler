@@ -1,0 +1,32 @@
+services:
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crawler
+    volumes: [db:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -proot"]
+      interval: 10s
+      retries: 5
+    ports: ["3306:3306"]
+
+  api:
+    build:
+      context: .
+      dockerfile: deployments/Dockerfile.api
+    environment:
+      - DB_DSN=root:root@tcp(db:3306)/crawler?parseTime=true
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8080:8080"]
+
+  web:
+    build:
+      context: .
+      dockerfile: deployments/Dockerfile.web
+    depends_on: [api]
+    ports: ["3000:3000"]
+
+volumes:
+  db:
