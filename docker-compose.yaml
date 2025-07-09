@@ -22,6 +22,7 @@ services:
     ports: ["8080:8080"]
 
   web:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: deployments/Dockerfile.web

@@ -1,17 +1,25 @@
-# ── builder ────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+# ---------- deps ----------
+FROM --platform=linux/amd64 node:20-slim AS deps
 WORKDIR /web
 COPY client/package*.json ./
-RUN npm ci --omit=dev
-COPY client/. .
-RUN npm run build          # Next.js static output
+# 👇  install *all* deps; we’ll prune later
+RUN npm ci               #  ⬅ remove --omit=dev
 
-# ── runner ────────────────────────────────────────────────
-FROM node:20-alpine
+# ---------- builder ----------
+FROM --platform=linux/amd64 node:20-slim AS builder
+WORKDIR /web
+COPY --from=deps /web/node_modules ./node_modules
+COPY client/. .
+RUN npm run build        # succeeds because tailwind/postcss are present
+
+# ---------- runner ----------
+FROM --platform=linux/amd64 node:20-slim AS runner
 WORKDIR /app
+ENV NODE_ENV=production
+# Optional: slim node_modules that Next copied into .next/standalone
+RUN npm prune --production || true
 COPY --from=builder /web/.next ./.next
 COPY --from=builder /web/public ./public
 COPY --from=builder /web/package*.json ./
-ENV PORT 3000
 EXPOSE 3000
 CMD ["node", ".next/standalone/server.js"]
