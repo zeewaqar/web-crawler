@@ -1,13 +1,37 @@
 'use client'
 
-import { Progress } from '@/components/ui/progress'
-import { useProgress } from '../hooks/useProgress'
+import { useEffect, useState } from 'react'
+import { Progress }           from '@/components/ui/progress'
+import { apiBase }            from '@/features/urls/api'   // ✅ absolute API base
 
-export function ProgressCell(props: { urlId: number; initialStatus: string }) {
-  const { urlId, initialStatus } = props
-  const pct = useProgress(
-    initialStatus === 'queued' || initialStatus === 'running' ? urlId : undefined
+interface Props {
+  urlId: number
+  initialStatus: 'queued' | 'running' | 'done' | 'error'
+}
+
+export function ProgressCell({ urlId, initialStatus }: Props) {
+  /* pct = null → not started, 0-100 → in progress/done */
+  const [pct, setPct] = useState<number | null>(
+    initialStatus === 'done' ? 100 :
+    initialStatus === 'error' ? 0   :  // won’t be shown (❌ path)
+    null
   )
+
+  /* subscribe only if queued/running */
+  useEffect(() => {
+    if (initialStatus === 'done' || initialStatus === 'error') return
+
+    const es = new EventSource(`${apiBase()}/api/v1/urls/${urlId}/stream`)
+
+    es.addEventListener('progress', (e) => {
+      const v = Number((e as MessageEvent).data)
+      setPct(v)
+      if (v >= 100) es.close()
+    })
+
+    es.onerror = () => es.close()
+    return () => es.close()
+  }, [urlId, initialStatus])
 
   /* finished states */
   if (initialStatus === 'done')  return <span className="text-green-600">✅</span>

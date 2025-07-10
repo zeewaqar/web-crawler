@@ -31,7 +31,12 @@ func crawl(id uint64) {
 	}
 
 	// mark running + send 0 %
-	database.DB.Model(&rec).Update("crawl_status", "running")
+	database.DB.Model(&rec).Updates(map[string]any{
+		"crawl_status":   "running",
+		"internal_links": 0, "external_links": 0, "broken_links": 0,
+		"h1": 0, "h2": 0, "h3": 0,
+		"has_login": false,
+	})
 	Publish(id, 0)
 
 	// ---- HTTP GET bound to ctx ----
