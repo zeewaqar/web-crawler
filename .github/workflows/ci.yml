@@ -10,11 +10,20 @@ jobs:
         image: mysql:8
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test
-        ports: ["33306:3306"]
+          MYSQL_DATABASE: crawler           # <- same as app expects
+        ports:
+          - 3306:3306                       # internal port is fine; mapping not required
         options: >-
           --health-cmd="mysqladmin ping -h localhost -proot"
-          --health-interval=10s --health-timeout=5s --health-retries=5
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # 🐳 make MySQL DSN available to `go test`
+      DB_DSN: root:root@tcp(mysql:3306)/crawler?parseTime=true
+      # 🔕 silence Next telemetry during build/lint
+      NEXT_TELEMETRY_DISABLED: '1'
 
     steps:
     - uses: actions/checkout@v4
@@ -22,26 +31,36 @@ jobs:
     # ── Client ─────────────────────────────────────────────
     - name: Setup Node
       uses: actions/setup-node@v4
-      with: { node-version: 20 }
+      with:
+        node-version: 20
+        cache: npm
+        cache-dependency-path: client/package-lock.json
+
     - name: Install client deps
-      run: |
-        cd client
-        npm ci
+      working-directory: client
+      run: npm ci
+
     - name: Lint & test client
+      working-directory: client
       run: |
-        cd client
         npm run lint
         npm test -- --run
 
     # ── Server ─────────────────────────────────────────────
-    - uses: actions/setup-go@v5
+    - name: Setup Go
+      uses: actions/setup-go@v5
       with: { go-version: '1.22' }
-    - name: Test server
+
+    - name: Vet & test server
+      working-directory: server
       run: |
-        cd server
         go vet ./...
         go test ./...
 
-    # ── Docker build (cache only) ─────────────────────────
-    - name: Build images
-      run: docker build -f deployments/Dockerfile.api -t api:ci .
+    # ── Docker build (cache) ───────────────────────────────
+    - name: Build API image (amd64)
+      run: >
+        docker build
+        --platform=linux/amd64             # 🔑 ensure correct native binaries
+        -f deployments/Dockerfile.api
+        -t api:ci .
