@@ -13,4 +13,5 @@ func Register(r *gin.Engine) {
 	v1.GET("/urls", handlers.ListURLs)
 	// Real-time crawl progress (Server-Sent Events)
 	v1.GET("/urls/:id/stream", handlers.StreamProgress)
+	v1.GET("/urls/:id", handlers.GetURLDetail)
 }
