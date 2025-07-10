@@ -1,15 +1,19 @@
+version: "3.8"
+
 services:
   db:
     image: mysql:8
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: crawler
-    volumes: [db:/var/lib/mysql]
+    volumes:
+      - db:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -proot"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -proot" ]
       interval: 10s
       retries: 5
-    ports: ["3306:3306"]
+    ports:
+      - "3306:3306"
 
   api:
     build:
@@ -18,18 +22,25 @@ services:
     environment:
       - DB_DSN=root:root@tcp(db:3306)/crawler?parseTime=true
     depends_on:
-      db: { condition: service_healthy }
-    ports: ["8080:8080"]
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
 
   web:
-    environment:
-      - NEXT_PUBLIC_API_BASE=http://api:8080
     platform: linux/amd64
     build:
       context: .
       dockerfile: deployments/Dockerfile.web
-    depends_on: [api]
-    ports: ["3000:3000"]
+      args:                         # 👈 build-time env
+        API_BASE: http://api:8080
+    environment:                    # 👈 run-time env (server & browser)
+      - API_BASE=http://api:8080
+      - NEXT_PUBLIC_API_BASE=http://api:8080
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
 
 volumes:
   db:

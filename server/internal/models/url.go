@@ -17,7 +17,7 @@ type URL struct {
 	HasLogin      bool      `json:"has_login"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
-	Links         []Link    `json:"links,omitempty"`
+	Links         []Link    `json:"links"`
 }
 
 type Link struct {

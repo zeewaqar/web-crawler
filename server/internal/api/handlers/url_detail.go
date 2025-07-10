@@ -21,5 +21,11 @@ func GetURLDetail(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 		return
 	}
+
+	// 🔹 ensure links is [] not null so JSON always matches schema
+	if url.Links == nil {
+		url.Links = []models.Link{}
+	}
+
 	c.JSON(http.StatusOK, url)
 }
