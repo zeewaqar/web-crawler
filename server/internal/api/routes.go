@@ -20,6 +20,7 @@ func Register(r *gin.Engine) {
 		secured.POST("/urls/bulk/restart", handlers.BulkRestart)
 		secured.DELETE("/urls", handlers.BulkDelete)
 		secured.PUT("/urls/:id/stop", handlers.StopURL)
+		secured.POST("/urls/bulk/stop", handlers.BulkStop)
 		// …any other modifying endpoints
 	}
 
