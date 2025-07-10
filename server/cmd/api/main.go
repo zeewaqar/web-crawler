@@ -21,23 +21,21 @@ import (
 )
 
 func main() {
-
-	// 1️⃣  Database bootstrap
+	/* 1️⃣  Database + migrations */
 	database.Init()
 	if err := database.RunMigrations(); err != nil {
 		log.Fatal("migrations failed:", err)
 	}
 	auth.Init(os.Getenv("JWT_SECRET"))
-	// 2️⃣  Start crawler workers (2×CPU)
+
+	/* 2️⃣  Start crawler workers (2× CPU) */
 	for i := 0; i < runtime.NumCPU()*2; i++ {
 		go crawler.Worker(crawler.Jobs)
 	}
 
-	// 3️⃣  Gin router & routes
+	/* 3️⃣  Gin router */
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
-
-	// 👇 CORS middleware — allow dev front-end & optional localhost ports
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"},
 		AllowMethods:     []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"},
@@ -45,18 +43,11 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+	router.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"ok": true}) })
+	api.Register(router)
 
-	router.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"ok": true})
-	})
-
-	api.Register(router) // mounts /api/v1/…
-
-	// 4️⃣  HTTP server in its own goroutine
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: router,
-	}
+	/* 4️⃣  HTTP server */
+	srv := &http.Server{Addr: ":8080", Handler: router}
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %v", err)
@@ -64,17 +55,27 @@ func main() {
 	}()
 	log.Println("API listening on :8080")
 
-	// 5️⃣  Wait for Ctrl-C / docker stop
+	/* 5️⃣  Wait for SIGINT / SIGTERM */
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("shutdown signal received")
 
-	// 6️⃣  Graceful shutdown sequence
-	crawler.CloseQueue() // stop workers
+	/* 6️⃣  Graceful shutdown sequence */
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	_ = srv.Shutdown(ctx) // stop HTTP server (ignore err)
+
+	// stop accepting new HTTP requests
+	_ = srv.Shutdown(ctx)
+
+	// stop crawler queue & wait for workers to finish
+	close(crawler.Jobs)
+	crawler.Wait()
+
+	// close DB connection pool
+	if sqlDB, err := database.DB.DB(); err == nil {
+		_ = sqlDB.Close()
+	}
 
 	log.Println("api exited cleanly")
 }
