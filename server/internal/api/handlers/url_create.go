@@ -15,6 +15,7 @@ type createURLRequest struct {
 }
 
 func CreateURL(c *gin.Context) {
+	/* ── 1. validate body ───────────────────────────────────────── */
 	var req createURLRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": "invalid body"})
@@ -28,15 +29,23 @@ func CreateURL(c *gin.Context) {
 		return
 	}
 
-	// upsert-or-return existing row
-	u := models.URL{OriginalURL: raw}
-	if err := database.DB.Where("original_url = ?", raw).
-		FirstOrCreate(&u).Error; err != nil {
+	/* ── 2. upsert-or-return existing row ───────────────────────── */
+	u := models.URL{
+		OriginalURL: raw,
+		CrawlStatus: "queued", // 💡 explicit valid value for new rows
+	}
+
+	result := database.DB.
+		Where("original_url = ?", raw).
+		FirstOrCreate(&u)
+
+	if result.Error != nil {
 		c.JSON(500, gin.H{"error": "db error"})
 		return
 	}
 
-	if u.CrawlStatus == "queued" { // only push if never processed
+	/* ── 3. enqueue only if row was newly created ───────────────── */
+	if result.RowsAffected == 1 { // row was inserted, not fetched
 		crawler.Jobs <- u.ID
 	}
 
