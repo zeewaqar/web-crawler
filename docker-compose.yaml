@@ -21,6 +21,7 @@ services:
       dockerfile: deployments/Dockerfile.api
     environment:
       - DB_DSN=root:root@tcp(db:3306)/crawler?parseTime=true
+      - JWT_SECRET=${JWT_SECRET:-supersecret_dev}
     depends_on:
       db:
         condition: service_healthy

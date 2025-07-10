@@ -1,12 +1,10 @@
-import DashboardTable from '@/features/urls/DashboardTable'
-import { AddUrlForm } from '@/features/urls/components/AddUrlForm'
+// src/app/page.tsx
+import { redirect } from 'next/navigation'
 
-export default function Dashboard() {
-  return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">URL Dashboard</h1>
-      <AddUrlForm />  
-      <DashboardTable />
-    </main>
-  )
+/** tell Next.js not to pre-render this route at build-time */
+export const dynamic = 'force-dynamic'
+
+export default function Root() {
+  /* runs only at request time */
+  redirect('/dashboard')
 }

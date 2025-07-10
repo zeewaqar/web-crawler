@@ -3,18 +3,27 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/zeewaqar/web-crawler/server/internal/api/handlers"
+	"github.com/zeewaqar/web-crawler/server/internal/auth"
 )
 
 func Register(r *gin.Engine) {
 	v1 := r.Group("/api/v1")
 
-	// URL ingestion
-	v1.POST("/urls", handlers.CreateURL)
-	v1.GET("/urls", handlers.ListURLs)
-	// Real-time crawl progress (Server-Sent Events)
-	v1.GET("/urls/:id/stream", handlers.StreamProgress)
-	v1.GET("/urls/:id", handlers.GetURLDetail)
-	v1.POST("/urls/bulk/restart", handlers.BulkRestart)
-	v1.DELETE("/urls", handlers.BulkDelete)
+	v1.POST("/register", handlers.Register) // public
 
+	v1.POST("/login", handlers.Login) // public
+
+	secured := v1.Group("/")
+	secured.Use(auth.RequireJWT()) // 🔒 protected routes
+	{
+		secured.POST("/urls", handlers.CreateURL)
+		secured.POST("/urls/bulk/restart", handlers.BulkRestart)
+		secured.DELETE("/urls", handlers.BulkDelete)
+		// …any other modifying endpoints
+	}
+
+	// read-only endpoints can stay outside if desired
+	v1.GET("/urls", handlers.ListURLs)
+	v1.GET("/urls/:id", handlers.GetURLDetail)
+	v1.GET("/urls/:id/stream", handlers.StreamProgress)
 }

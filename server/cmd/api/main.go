@@ -15,17 +15,19 @@ import (
 
 	// ── internal packages ─────────────────────────────
 	"github.com/zeewaqar/web-crawler/server/internal/api"
+	"github.com/zeewaqar/web-crawler/server/internal/auth"
 	"github.com/zeewaqar/web-crawler/server/internal/crawler"
 	"github.com/zeewaqar/web-crawler/server/internal/database"
 )
 
 func main() {
+
 	// 1️⃣  Database bootstrap
 	database.Init()
 	if err := database.RunMigrations(); err != nil {
 		log.Fatal("migrations failed:", err)
 	}
-
+	auth.Init(os.Getenv("JWT_SECRET"))
 	// 2️⃣  Start crawler workers (2×CPU)
 	for i := 0; i < runtime.NumCPU()*2; i++ {
 		go crawler.Worker(crawler.Jobs)
@@ -39,7 +41,7 @@ func main() {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "http://127.0.0.1:3000"},
 		AllowMethods:     []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))

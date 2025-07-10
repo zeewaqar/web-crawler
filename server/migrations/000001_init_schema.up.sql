@@ -19,7 +19,7 @@ CREATE TABLE links (
   id         BIGINT PRIMARY KEY AUTO_INCREMENT,
   url_id     BIGINT NOT NULL,
   href       VARCHAR(2048) NOT NULL,
-  http_status     SMALLINT,
+  http_status     SMALLINT NULL,
   is_internal BOOL,
   checked_at TIMESTAMP NULL,
   CONSTRAINT fk_url FOREIGN KEY (url_id)
