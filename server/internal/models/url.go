@@ -3,19 +3,21 @@ package models
 import "time"
 
 type URL struct {
-	ID            uint64  `gorm:"primaryKey"`
-	OriginalURL   string  `gorm:"size:768;uniqueIndex"`
-	CrawlStatus   string  `gorm:"column:crawl_status;type:enum('queued','running','done','error');default:'queued'"` // 👈 add this
-	HTMLVersion   *string `gorm:"size:16"`
-	Title         *string `gorm:"size:512"`
-	H1, H2, H3    int
-	InternalLinks int
-	ExternalLinks int
-	BrokenLinks   int
-	HasLogin      bool
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	Links         []Link `gorm:"constraint:OnDelete:CASCADE"`
+	ID            uint64    `gorm:"primaryKey" json:"id"`
+	OriginalURL   string    `gorm:"size:768;uniqueIndex" json:"original_url"`
+	CrawlStatus   string    `gorm:"column:crawl_status" json:"crawl_status"`
+	HTMLVersion   *string   `json:"html_version"`
+	Title         *string   `json:"title"`
+	H1            int       `json:"h1"`
+	H2            int       `json:"h2"`
+	H3            int       `json:"h3"`
+	InternalLinks int       `json:"internal_links"`
+	ExternalLinks int       `json:"external_links"`
+	BrokenLinks   int       `json:"broken_links"`
+	HasLogin      bool      `json:"has_login"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	Links         []Link    `json:"links,omitempty"`
 }
 
 type Link struct {

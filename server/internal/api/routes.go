@@ -10,7 +10,7 @@ func Register(r *gin.Engine) {
 
 	// URL ingestion
 	v1.POST("/urls", handlers.CreateURL)
-
+	v1.GET("/urls", handlers.ListURLs)
 	// Real-time crawl progress (Server-Sent Events)
 	v1.GET("/urls/:id/stream", handlers.StreamProgress)
 }
