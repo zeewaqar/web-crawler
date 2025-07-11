@@ -9,7 +9,7 @@ import { UrlRow, apiBase } from '../urls/api'
 import { ProgressCell } from './components/ProgressCell'
 import { useAuth } from '@/lib/auth'
 
-/* ---------- reusable sort header ---------- */
+/* ── reusable sort header ───────────────────────────────────────────────────── */
 function SortHeader<TData, TValue>({
   column,
   label,
@@ -30,8 +30,7 @@ function SortHeader<TData, TValue>({
   )
 }
 
-
-/* ---------- Stop button (needs hook) ---------- */
+/* ── per-row Stop button ─────────────────────────────────────────────────────── */
 function StopButton({ id }: { id: number }) {
   const { token } = useAuth()
   const qc = useQueryClient()
@@ -57,9 +56,9 @@ function StopButton({ id }: { id: number }) {
   )
 }
 
-/* ---------- column definitions ---------- */
+/* ── column definitions ──────────────────────────────────────────────────────── */
 export const columns: ColumnDef<UrlRow>[] = [
-  /* Select checkbox */
+  // select checkbox
   {
     id: 'select',
     size: 30,
@@ -80,7 +79,23 @@ export const columns: ColumnDef<UrlRow>[] = [
     ),
   },
 
-  /* Data columns */
+  // ── NEW: raw URL column ─────────────────────────────
+  {
+    accessorKey: 'original_url',
+    header: ({ column }) => <SortHeader column={column} label="URL" />,
+    cell: ({ row }) => (
+      <a
+        href={row.original.original_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline break-all"
+      >
+        {row.original.original_url}
+      </a>
+    ),
+  },
+
+  // ── Title column ────────────────────────────────────
   {
     accessorKey: 'title',
     header: ({ column }) => <SortHeader column={column} label="Title" />,
@@ -93,6 +108,8 @@ export const columns: ColumnDef<UrlRow>[] = [
       </Link>
     ),
   },
+
+  // ── Other data columns ──────────────────────────────
   { accessorKey: 'html_version', header: 'HTML' },
   {
     accessorKey: 'internal_links',
@@ -117,7 +134,7 @@ export const columns: ColumnDef<UrlRow>[] = [
     ),
   },
 
-  /* Per-row Stop action */
+  // per-row action
   {
     id: 'actions',
     size: 80,
