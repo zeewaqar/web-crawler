@@ -1,9 +1,19 @@
 'use client'
-import { useAuth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth()
-  if (!token) redirect('/login')
-  return children
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const router = useRouter()
+
+  /* if already signed-in, skip login/register */
+  useEffect(() => {
+    if (localStorage.getItem('jwt')) router.replace('/dashboard')
+  }, [router])
+
+  return <>{children}</>
 }

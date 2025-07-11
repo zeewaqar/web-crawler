@@ -1,22 +1,31 @@
 // app/(protected)/layout.tsx
-"use client";
-import Nav from "@/components/ui/Nav";
-import {useAuth} from "@/lib/auth";
-import {redirect} from "next/navigation";
-import {ReactNode} from "react";
+'use client'
 
-export default function ProtectedLayout({children}: {children: ReactNode}) {
-  const {token} = useAuth();
+import { ReactNode } from 'react'
+import { redirect }  from 'next/navigation'
+import Nav           from '@/components/ui/Nav'
+import { useAuth }   from '@/lib/auth'
 
-  if (token === null) {
-    // still hydrating – show nothing (or a spinner) instead of redirecting
-    return null;
+export default function ProtectedLayout({ children }: { children: ReactNode }) {
+  const { token } = useAuth()
+
+  /* 1. still hydrating → show spinner */
+  if (token === undefined) {
+    return (
+      <div className="flex h-screen items-center justify-center text-sm text-muted-foreground">
+        Loading…
+      </div>
+    )
   }
-  if (!token) redirect("/login");
 
+  /* ---------- 2. unauthenticated → /login ------------- */
+  if (!token) redirect('/login')
+
+  /* ---------- 3. authenticated → render UI ------------ */
   return (
     <>
-      <Nav/>{children}
+      <Nav />
+      {children}
     </>
-  );
+  )
 }

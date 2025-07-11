@@ -13,6 +13,8 @@ func Register(r *gin.Engine) {
 
 	v1.POST("/login", handlers.Login) // public
 
+	v1.POST("/logout", handlers.Logout)
+
 	secured := v1.Group("/")
 	secured.Use(auth.RequireJWT()) // 🔒 protected routes
 	{

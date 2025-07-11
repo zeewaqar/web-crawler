@@ -63,4 +63,4 @@ export async function fetchUrlDetail(id: number) {
   const json = await r.json()
   return UrlDetailSchema.parse(json)
 }
-export { apiBase } 
+export { apiBase }

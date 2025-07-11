@@ -1,34 +1,41 @@
+// src/lib/auth.tsx
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 
 interface AuthContextValue {
-  token: string | null
+  // undefined = loading, null = signed out, string = JWT
+  token: string | null | undefined
   setToken: (t: string | null) => void
 }
 
 export const AuthCtx = createContext<AuthContextValue>({
-  token: null,
+  token: undefined,
   setToken: () => {},
 })
 
 export const useAuth = () => useContext(AuthCtx)
 
-/* ---------- updated provider ---------- */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => {
-    /* this runs only on the client */
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem('jwt')
-  })
+  // start undefined so we can show a spinner until we've read localStorage
+  const [token, setToken] = useState<string | null | undefined>(undefined)
 
-  /* keep localStorage in sync */
+  // on mount, read localStorage once
   useEffect(() => {
-    if (token) localStorage.setItem('jwt', token)
-    else localStorage.removeItem('jwt')
+    const saved = localStorage.getItem('jwt')
+    setToken(saved || null)
+  }, [])
+
+  // keep localStorage in sync after hydration
+  useEffect(() => {
+    if (token === undefined) return    // still loading
+    if (token)  localStorage.setItem('jwt', token)
+    else        localStorage.removeItem('jwt')
   }, [token])
 
   return (
-    <AuthCtx.Provider value={{ token, setToken }}>{children}</AuthCtx.Provider>
+    <AuthCtx.Provider value={{ token, setToken }}>
+      {children}
+    </AuthCtx.Provider>
   )
 }
