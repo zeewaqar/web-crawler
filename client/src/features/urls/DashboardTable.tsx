@@ -1,4 +1,5 @@
-"use client";
+// src/features/urls/DashboardTable.tsx
+'use client'
 
 import {
   useReactTable,
@@ -7,117 +8,118 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
   flexRender,
-} from "@tanstack/react-table";
-import {useQuery} from "@tanstack/react-query";
-import {useState, useEffect} from "react";
+} from '@tanstack/react-table'
+import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
 
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select";
-import {fetchUrls} from "@/features/urls/api";
-import {columns} from "./columns";
-import {BulkToolbar} from "./components/BulkToolbar";
+} from '@/components/ui/select'
+import { fetchUrls } from '@/features/urls/api'
+import { columns } from './columns'
+import { BulkToolbar } from './components/BulkToolbar'
 
 export default function DashboardTable() {
   /* ── pagination & search state ─────────────────── */
-  const [page, setPage] = useState(1);
-  const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
+  const [page, setPage] = useState(1)
+  const [q, setQ] = useState('')
+  const [debouncedQ, setDebouncedQ] = useState('')
 
-  /* ── row-selection state (bulk) ─────────────────── */
-  const [rowSelection, setRowSelection] = useState({});
+  /* ── row-selection state for bulk actions ───────── */
+  const [rowSelection, setRowSelection] = useState({})
 
-  /* debounce search */
+  /* debounce global search input */
   useEffect(() => {
-    const id = setTimeout(() => setDebouncedQ(q), 250);
-    return () => clearTimeout(id);
-  }, [q]);
+    const id = setTimeout(() => setDebouncedQ(q), 250)
+    return () => clearTimeout(id)
+  }, [q])
 
-  /* query */
-  const {data, isLoading, isFetching} = useQuery({
-    queryKey: ["urls", page, debouncedQ],
+  /* fetch paginated & filtered data */
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['urls', page, debouncedQ],
     queryFn: () => fetchUrls(page, 20, debouncedQ),
     placeholderData: (prev) => prev,
-  });
+  })
 
-  /* ── table instance ─────────────────────────────── */
+  /* ── react-table instance setup ─────────────────── */
   const table = useReactTable({
     data: data?.data ?? [],
     columns,
     pageCount: Math.ceil((data?.total ?? 0) / 20),
 
-    /* --- state kept in React --- */
     state: {
-      pagination: {pageIndex: page - 1, pageSize: 20},
+      pagination: { pageIndex: page - 1, pageSize: 20 },
       rowSelection,
       sorting: [],
       columnFilters: [],
     },
 
-    /* --- callbacks --- */
     manualPagination: true,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: (u) =>
-      table.setState((o) => ({
-        ...o,
-        sorting: typeof u === "function" ? u(o.sorting) : u,
+    onSortingChange: (updater) =>
+      table.setState((old) => ({
+        ...old,
+        sorting:
+          typeof updater === 'function' ? updater(old.sorting) : updater,
       })),
-    onColumnFiltersChange: (u) =>
-      table.setState((o) => ({
-        ...o,
-        columnFilters: typeof u === "function" ? u(o.columnFilters) : u,
+    onColumnFiltersChange: (updater) =>
+      table.setState((old) => ({
+        ...old,
+        columnFilters:
+          typeof updater === 'function'
+            ? updater(old.columnFilters)
+            : updater,
       })),
 
-    /* --- row models --- */
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-  });
+  })
 
+  /* collect selected row IDs for bulk actions */
   const selectedIds = table
     .getSelectedRowModel()
-    .rows.map((r) => r.original.id);
+    .rows.map((r) => r.original.id)
 
-  const pageCount = table.getPageCount() || 1;
+  const pageCount = table.getPageCount() || 1
 
-  /* ── render ─────────────────────────────────────── */
   return (
     <>
+      {/* bulk actions toolbar */}
       <BulkToolbar selected={selectedIds} />
 
-      {/* Search + Status filter */}
-      <div className="flex gap-2 mb-4">
+      {/* search + status filter */}
+      <div className="flex flex-wrap gap-2 mb-4">
         <Input
           placeholder="Search URL…"
           value={q}
           onChange={(e) => {
-            setQ(e.target.value);
-            setPage(1);
+            setQ(e.target.value)
+            setPage(1)
           }}
           className="max-w-sm"
         />
 
-        {/* ——— status dropdown ——— */}
         <Select
           defaultValue="all"
           onValueChange={(val) => {
             table
-              .getColumn("crawl_status")
-              ?.setFilterValue(val === "all" ? "" : val);
-            setPage(1);
-          }}>
+              .getColumn('crawl_status')
+              ?.setFilterValue(val === 'all' ? '' : val)
+            setPage(1)
+          }}
+        >
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="queued">Queued</SelectItem>
@@ -132,7 +134,7 @@ export default function DashboardTable() {
         )}
       </div>
 
-      {/* Table (scrollable on mobile) */}
+      {/* table with horizontal scroll on small screens */}
       <div className="w-full overflow-x-auto">
         <table className="min-w-[720px] text-sm">
           <thead>
@@ -146,7 +148,6 @@ export default function DashboardTable() {
               </tr>
             ))}
           </thead>
-
           <tbody>
             {isLoading ? (
               <tr>
@@ -165,10 +166,7 @@ export default function DashboardTable() {
                 <tr key={row.id} className="border-t">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="p-2">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
@@ -178,13 +176,14 @@ export default function DashboardTable() {
         </table>
       </div>
 
-      {/* Pagination */}
+      {/* pagination controls */}
       <div className="flex justify-between items-center mt-4">
         <Button
           variant="outline"
           size="sm"
           disabled={page === 1}
-          onClick={() => setPage((p) => p - 1)}>
+          onClick={() => setPage((p) => p - 1)}
+        >
           Prev
         </Button>
 
@@ -196,10 +195,11 @@ export default function DashboardTable() {
           variant="outline"
           size="sm"
           disabled={page >= pageCount}
-          onClick={() => setPage((p) => p + 1)}>
+          onClick={() => setPage((p) => p + 1)}
+        >
           Next
         </Button>
       </div>
     </>
-  );
+  )
 }

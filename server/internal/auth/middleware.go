@@ -1,3 +1,4 @@
+// server/internal/auth/require.go
 package auth
 
 import (
@@ -7,20 +8,38 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RequireJWT checks for a JWT in either the Authorization header or
+// the ?token= query-param (for EventSource streams).
 func RequireJWT() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		h := c.GetHeader("Authorization")
-		parts := strings.SplitN(h, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		var tokenString string
+
+		// 1) Try Authorization header
+		if authHeader := c.GetHeader("Authorization"); strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+
+		// 2) Fallback to ?token= for SSE
+		if tokenString == "" {
+			if t := c.Query("token"); t != "" {
+				tokenString = t
+			}
+		}
+
+		if tokenString == "" {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		id, err := Parse(parts[1])
+
+		// parse & validate
+		uid, err := Parse(tokenString)
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		c.Set("uid", id) // pass user-id downstream
+
+		// inject user-id for handlers
+		c.Set("uid", uid)
 		c.Next()
 	}
 }

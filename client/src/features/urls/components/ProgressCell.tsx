@@ -1,8 +1,10 @@
+// src/features/urls/components/ProgressCell.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Progress }           from '@/components/ui/progress'
-import { apiBase }            from '@/features/urls/api'   // ✅ absolute API base
+import { Progress }            from '@/components/ui/progress'
+import { apiBase }             from '@/features/urls/api'
+import { useAuth }             from '@/lib/auth'
 
 interface Props {
   urlId: number
@@ -10,10 +12,12 @@ interface Props {
 }
 
 export function ProgressCell({ urlId, initialStatus }: Props) {
+  const { token } = useAuth()
+
   /* pct = null → not started, 0-100 → in progress/done */
   const [pct, setPct] = useState<number | null>(
-    initialStatus === 'done' ? 100 :
-    initialStatus === 'error' ? 0   :  // won’t be shown (❌ path)
+    initialStatus === 'done'  ? 100 :
+    initialStatus === 'error' ? 0   :
     null
   )
 
@@ -21,17 +25,29 @@ export function ProgressCell({ urlId, initialStatus }: Props) {
   useEffect(() => {
     if (initialStatus === 'done' || initialStatus === 'error') return
 
-    const es = new EventSource(`${apiBase()}/api/v1/urls/${urlId}/stream`)
+    // build the EventSource URL, appending token if we have one
+    const url = new URL(`${apiBase()}/api/v1/urls/${urlId}/stream`)
+    if (token) {
+      url.searchParams.set('token', token)
+    }
 
-    es.addEventListener('progress', (e) => {
-      const v = Number((e as MessageEvent).data)
+    const es = new EventSource(url.toString())
+
+    es.addEventListener('progress', (e: MessageEvent) => {
+      const v = Number(e.data)
       setPct(v)
       if (v >= 100) es.close()
     })
 
-    es.onerror = () => es.close()
-    return () => es.close()
-  }, [urlId, initialStatus])
+    es.onerror = () => {
+      es.close()
+      setPct(null)
+    }
+
+    return () => {
+      es.close()
+    }
+  }, [urlId, initialStatus, token])
 
   /* finished states */
   if (initialStatus === 'done')  return <span className="text-green-600">✅</span>

@@ -1,19 +1,59 @@
+// src/app/urls/[id]/page.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth'
 import { fetchUrlDetail } from '@/features/urls/api'
 import { BrokenLinkList } from '@/features/urls/components/BrokenLinkList'
 import { LinkTypeChart } from '@/features/urls/components/LinkTypeChart'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export default async function Page(props: any) {
-  // Safe runtime narrowing ---------------------------------------------------
-  const id = Number(props?.params?.id)
-  if (!id) return <p className="p-6">Invalid URL id</p>
+export default function UrlDetailPage() {
+  const { token } = useAuth()
+  const router = useRouter()
+  const { id } = useParams() as { id?: string }
 
-  const data = await fetchUrlDetail(id)
+  const [data, setData] = useState<Awaited<ReturnType<typeof fetchUrlDetail>> | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // --------------------------------------------------------------------------
+  useEffect(() => {
+    // wait for auth hydration
+    if (token === undefined) return
+
+    // not logged in → kick back to login
+    if (!token) {
+      router.replace('/login')
+      return
+    }
+
+    // invalid id param
+    const urlId = Number(id)
+    if (!urlId) {
+      setError('Invalid URL id')
+      setLoading(false)
+      return
+    }
+
+    // fetch with token injected by your fetch wrapper
+    fetchUrlDetail(urlId)
+      .then((d) => setData(d))
+      .catch(() => setError('Failed to load URL details'))
+      .finally(() => setLoading(false))
+  }, [token, id, router])
+
+  if (error) {
+    return <div className="p-6 text-red-600">{error}</div>
+  }
+  if (loading || !data) {
+    return <div className="p-6">Loading…</div>
+  }
+
   return (
     <main className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold break-all">{data.original_url}</h1>
+      <h1 className="text-2xl font-semibold break-all">
+        {data.original_url}
+      </h1>
 
       <section className="grid md:grid-cols-2 gap-8">
         <div>
@@ -27,9 +67,7 @@ export default async function Page(props: any) {
         <div>
           <h2 className="font-medium mb-2">Broken links</h2>
           <BrokenLinkList
-            links={data.links.filter(
-              (l) => l.http_status && l.http_status >= 400,
-            )}
+            links={data.links.filter((l) => l.http_status && l.http_status >= 400)}
           />
         </div>
       </section>
@@ -38,11 +76,10 @@ export default async function Page(props: any) {
         <h2 className="font-medium mb-2">Meta</h2>
         <ul className="text-sm list-disc ml-5">
           <li>HTML version: {data.html_version ?? 'unknown'}</li>
-          <li>Headings: h1={data.h1}  h2={data.h2}  h3={data.h3}</li>
+          <li>Headings: h1={data.h1} h2={data.h2} h3={data.h3}</li>
           <li>Login form: {data.has_login ? 'yes' : 'no'}</li>
         </ul>
       </section>
     </main>
   )
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */

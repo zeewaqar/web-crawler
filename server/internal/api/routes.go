@@ -23,11 +23,12 @@ func Register(r *gin.Engine) {
 		secured.DELETE("/urls", handlers.BulkDelete)
 		secured.PUT("/urls/:id/stop", handlers.StopURL)
 		secured.POST("/urls/bulk/stop", handlers.BulkStop)
+		secured.GET("/urls", handlers.ListURLs)
+		secured.GET("/urls/:id", handlers.GetURLDetail)
+		secured.GET("/urls/:id/stream", handlers.StreamProgress)
 		// …any other modifying endpoints
 	}
 
 	// read-only endpoints can stay outside if desired
-	v1.GET("/urls", handlers.ListURLs)
-	v1.GET("/urls/:id", handlers.GetURLDetail)
-	v1.GET("/urls/:id/stream", handlers.StreamProgress)
+
 }

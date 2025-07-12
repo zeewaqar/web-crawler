@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth'
 
 /* ----- inner component that uses the hook ----- */
 function LoginForm() {
-  const params       = useSearchParams()           // ✔ inside Suspense now
+  const params       = useSearchParams()          
   const { setToken } = useAuth()
   const router       = useRouter()
 
@@ -82,7 +82,6 @@ function LoginForm() {
   )
 }
 
-/* ----- outer component exported as the page ----- */
 export default function Login() {
   return (
     <Suspense fallback={<div className="p-6">Loading…</div>}>
