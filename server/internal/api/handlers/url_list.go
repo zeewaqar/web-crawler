@@ -11,7 +11,11 @@ import (
 )
 
 func ListURLs(c *gin.Context) {
-	// --- query params with sane defaults ---
+	// pull user ID from context
+	uidAny, _ := c.Get("uid")
+	uid := uidAny.(uint64)
+
+	// pagination & search params
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 	if page < 1 {
@@ -22,25 +26,28 @@ func ListURLs(c *gin.Context) {
 	}
 	q := strings.TrimSpace(c.Query("q"))
 
-	var rows []models.URL
+	// base query: only this user’s URLs
 	tx := database.DB.
+		Where("user_id = ?", uid).
 		Limit(size).
 		Offset((page - 1) * size).
 		Order("created_at DESC")
 
 	if q != "" {
-		like := "%" + q + "%"
-		tx = tx.Where("original_url LIKE ?", like)
+		tx = tx.Where("original_url LIKE ?", "%"+q+"%")
 	}
 
+	var rows []models.URL
 	if err := tx.Find(&rows).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "db"})
 		return
 	}
 
-	// total count (for pagination UI)
+	// count total for this user + filter
 	var total int64
-	countTx := database.DB.Model(&models.URL{})
+	countTx := database.DB.
+		Model(&models.URL{}).
+		Where("user_id = ?", uid)
 	if q != "" {
 		countTx = countTx.Where("original_url LIKE ?", "%"+q+"%")
 	}

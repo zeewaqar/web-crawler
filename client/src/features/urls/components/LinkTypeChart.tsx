@@ -1,20 +1,32 @@
+// src/features/urls/components/LinkTypeChart.tsx
 'use client'
 
-import { Pie, PieChart, Cell, Tooltip } from 'recharts'
+import dynamic from 'next/dynamic'
 
-export function LinkTypeChart({ internal, external }: { internal: number; external: number }) {
-  const data = [
-    { name: 'Internal', value: internal },
-    { name: 'External', value: external },
-  ]
-  const COLORS = ['#16a34a', '#0ea5e9']  // Tailwind green-600 / sky-500
+interface LinkTypeChartProps {
+  internal: number
+  external: number
+}
 
+// Create a separate component for the actual chart
+const ChartRenderer = dynamic(
+  () => import('@/features/urls/components/ChartRenderer'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="w-[200px] h-[200px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+)
+
+export function LinkTypeChart({ internal, external }: LinkTypeChartProps) {
   return (
-    <PieChart width={220} height={220}>
-      <Pie data={data} dataKey="value" cx="50%" cy="50%" outerRadius={80}>
-        {data.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
-      </Pie>
-      <Tooltip />
-    </PieChart>
+    <div className="max-w-sm mx-auto">
+      <div className="flex justify-center">
+        <ChartRenderer internal={internal} external={external} />
+      </div>
+    </div>
   )
 }

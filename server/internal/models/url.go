@@ -6,7 +6,8 @@ import "time"
 
 type URL struct {
 	ID            uint64    `gorm:"primaryKey"            json:"id"`
-	OriginalURL   string    `gorm:"size:768;uniqueIndex"  json:"original_url"`
+	UserID        uint64    `gorm:"not null;index" json:"-"`
+	OriginalURL   string    `gorm:"size:768;uniqueIndex:idx_urls_user_url" json:"original_url"`
 	CrawlStatus   string    `gorm:"default:queued"        json:"crawl_status"` // queued | running | done | error
 	HTMLVersion   *string   `json:"html_version"`
 	Title         *string   `json:"title"`

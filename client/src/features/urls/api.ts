@@ -42,13 +42,21 @@ export function apiBase() {
   )
 }
 
-/** Always attaches your JWT from localStorage */
+/** Check if we're running in the browser */
+function isBrowser() {
+  return typeof window !== 'undefined'
+}
+
+/** Always attaches your JWT from localStorage (client-side only) */
 async function authFetch(path: string, init: RequestInit = {}) {
-  const token = localStorage.getItem('jwt')
+  // Only try to get token from localStorage if we're in the browser
+  const token = isBrowser() ? localStorage.getItem('jwt') : null
+  
   const headers = {
     ...(init.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
+  
   return fetch(`${apiBase()}${path}`, {
     ...init,
     headers,

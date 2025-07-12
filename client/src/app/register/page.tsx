@@ -1,68 +1,115 @@
-// app/register/page.tsx
-'use client'
+// src/app/register/page.tsx
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth }   from '@/lib/auth'
-import { Input }     from '@/components/ui/input'
-import { Button }    from '@/components/ui/button'
-import { apiBase }   from '@/features/urls/api'
+import {useRouter} from "next/navigation";
+import Link from "next/link";
+
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+
+import {z} from "zod";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+
+import {apiBase} from "@/features/urls/api";
+
+// ─── Zod schema: just email + password ───────────────────────────────
+const RegisterSchema = z.object({
+  // nonempty + email()
+  email: z
+    .email()
+    .nonempty("Email is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+type RegisterFormValues = z.infer<typeof RegisterSchema>;
 
 export default function RegisterPage() {
-  const { token }     = useAuth()
-  const router        = useRouter()
+  const router = useRouter();
+  const {
+    register,
+    handleSubmit,
+    formState: {errors, isSubmitting},
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(RegisterSchema),
+  });
 
-  const [email, setEmail] = useState('')
-  const [pass,  setPass ] = useState('')
-  const [err,   setErr ]  = useState<string|null>(null)
-
-  useEffect(() => {
-    if (token) router.replace('/dashboard')
-  }, [token, router])
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setErr(null)
+  const onSubmit = async (data: RegisterFormValues) => {
     const res = await fetch(`${apiBase()}/api/v1/register`, {
-      method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body   : JSON.stringify({ email, password: pass }),
-    })
-    if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: 'Error' }))
-      setErr(error)
-      return
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      router.replace("/login?ok=1");
+    } else {
+      const {error} = await res
+        .json()
+        .catch(() => ({error: "Registration failed"}));
+      alert(error);
     }
-    router.replace('/login?registered=1')
-  }
+  };
 
   return (
-    <main className="p-6 max-w-sm mx-auto">
-      <h1 className="text-2xl font-semibold mb-4">Register</h1>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <Input
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          placeholder="password"
-          value={pass}
-          onChange={(e) => setPass(e.target.value)}
-          required
-        />
-        {err && <p className="text-red-600">{err}</p>}
-        <Button className="w-full">Create account</Button>
-      </form>
-      <p className="mt-4 text-sm">
-        Already have an account?{' '}
-        <a href="/login" className="text-blue-600 hover:underline">
-          Log in
-        </a>
-      </p>
-    </main>
-  )
+    <Card className="max-w-md mx-auto mt-12">
+      <CardHeader>
+        <CardTitle className="text-2xl">Create a new account</CardTitle>
+        <CardDescription>Sign up to start crawling pages.</CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <Input
+              type="email"
+              placeholder="you@example.com"
+              {...register("email")}
+              aria-invalid={!!errors.email}
+            />
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <Input
+              type="password"
+              placeholder="Minimum 6 characters"
+              {...register("password")}
+              aria-invalid={!!errors.password}
+            />
+            {errors.password && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.password.message}
+              </p>
+            )}
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Registering…" : "Register"}
+          </Button>
+        </form>
+      </CardContent>
+
+      <CardFooter className="text-center">
+        <p className="text-sm">
+          Already have an account?{" "}
+          <Link href="/login" className="text-blue-600 hover:underline">
+            Log in
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
+  );
 }

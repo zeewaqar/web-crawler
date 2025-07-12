@@ -9,19 +9,23 @@ import (
 	"github.com/zeewaqar/web-crawler/server/internal/models"
 )
 
-type bulkIds struct {
+// rename to avoid collision
+type bulkRestartPayload struct {
 	IDs []uint64 `json:"ids" binding:"required"`
 }
 
 func BulkRestart(c *gin.Context) {
-	var body bulkIds
+	var body bulkRestartPayload
 	if err := c.ShouldBindJSON(&body); err != nil || len(body.IDs) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ids required"})
 		return
 	}
 
-	// reset crawl_status + stats
+	uidAny, _ := c.Get("uid")
+	uid := uidAny.(uint64)
+
 	if err := database.DB.Model(&models.URL{}).
+		Where("user_id = ?", uid).
 		Where("id IN ?", body.IDs).
 		Updates(map[string]any{
 			"crawl_status":   "queued",
@@ -33,7 +37,6 @@ func BulkRestart(c *gin.Context) {
 		return
 	}
 
-	// enqueue each id
 	for _, id := range body.IDs {
 		crawler.Jobs <- id
 	}

@@ -1,23 +1,58 @@
+// src/features/urls/components/BrokenLinkList.tsx
 'use client'
 
+import { useState, useEffect } from 'react'
 import { LinkRow } from '@/features/types'
 
-export function BrokenLinkList({ links }: { links: LinkRow[] }) {
-  if (!links.length) return <p className="text-sm text-muted-foreground">No broken links 🎉</p>
+interface BrokenLinkListProps {
+  links: LinkRow[]
+}
+
+export function BrokenLinkList({ links }: BrokenLinkListProps) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Don't render on server to avoid any localStorage issues
+  if (!isClient) {
+    return (
+      <div className="space-y-2">
+        <div className="animate-pulse h-4 bg-gray-200 rounded"></div>
+        <div className="animate-pulse h-4 bg-gray-200 rounded"></div>
+      </div>
+    )
+  }
 
   return (
-    <table className="text-sm w-full">
-      <thead>
-        <tr><th className="text-left p-1">URL</th><th className="p-1">Status</th></tr>
-      </thead>
-      <tbody>
-        {links.map((l, i) => (
-          <tr key={i} className="border-t">
-            <td className="p-1 break-all">{l.href}</td>
-            <td className="p-1 text-center">{l.http_status}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="space-y-2">
+      {links.length === 0 ? (
+        <p className="text-sm text-gray-500">
+          No broken links 🎉
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="p-2 text-left">URL</th>
+                <th className="p-2 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {links.map((l, i) => (
+                <tr key={i} className="border-b">
+                  <td className="p-2 break-all">{l.href}</td>
+                  <td className="p-2 text-center">
+                    <span className="font-mono">{l.http_status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   )
 }
