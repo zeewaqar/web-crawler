@@ -20,9 +20,9 @@ jobs:
           --health-retries=5
 
     env:
-      # 🐳 make MySQL DSN available to `go test`
+      #  make MySQL DSN available to `go test`
       DB_DSN: root:root@tcp(mysql:3306)/crawler?parseTime=true
-      # 🔕 silence Next telemetry during build/lint
+      #  silence Next telemetry during build/lint
       NEXT_TELEMETRY_DISABLED: '1'
 
     steps:
@@ -61,6 +61,6 @@ jobs:
     - name: Build API image (amd64)
       run: >
         docker build
-        --platform=linux/amd64             # 🔑 ensure correct native binaries
+        --platform=linux/amd64             #  ensure correct native binaries
         -f deployments/Dockerfile.api
         -t api:ci .
