@@ -33,9 +33,9 @@ services:
     build:
       context: .
       dockerfile: deployments/Dockerfile.web
-      args:                         # 👈 build-time env
+      args:                        
         API_BASE: http://api:8080
-    environment:                    # 👈 run-time env (server & browser)
+    environment:                    
       - API_BASE=http://api:8080
       - NEXT_PUBLIC_API_BASE=http://api:8080
     depends_on:
