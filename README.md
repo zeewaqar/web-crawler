@@ -136,4 +136,4 @@ npm test
 
 ## License
 
-MIT © Your Name
+MIT © 2025 zeewaqar
