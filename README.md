@@ -126,14 +126,6 @@ npm test
 └── README.md             # This file
 ```
 
-## Edge Cases & Validation
-
-*   Zod schemas enforce:
-    *   Required and formatted email/password on login & register.
-    *   URL must be valid HTTP/HTTPS, with inline 409 Duplicate entry handling.
-*   Detail page:
-    *   Truncates broken-links list to 100 items, shows note if more exist.
-
 ## License
 
 MIT © 2025 zeewaqar
