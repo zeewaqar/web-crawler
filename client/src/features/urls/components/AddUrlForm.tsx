@@ -19,6 +19,8 @@ const UrlSchema = z.object({
 })
 type UrlForm = z.infer<typeof UrlSchema>
 
+
+
 export function AddUrlForm() {
   const qc = useQueryClient()
   const authFetch = useAuthFetch()
@@ -26,6 +28,7 @@ export function AddUrlForm() {
     register, handleSubmit, reset, watch,
     formState: { errors, isSubmitting },
   } = useForm<UrlForm>({ resolver: zodResolver(UrlSchema) })
+
 
   const urlValue = watch('url')
   const isValidUrl = urlValue && !errors.url && urlValue.startsWith('http')
@@ -38,6 +41,10 @@ export function AddUrlForm() {
         body: JSON.stringify(data),
       })
       if (!r.ok) {
+         if (r.status === 409) {
+          const { error } = await r.json().catch(() => ({ error: 'Already added' }))
+          throw new Error(error || 'URL already exists')
+        }
         const { error } =
           await r.json().catch(() => ({ error: 'Server error' }))
         throw new Error(error)

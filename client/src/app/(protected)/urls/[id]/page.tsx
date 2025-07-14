@@ -475,7 +475,11 @@ export default function UrlDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <BrokenLinkList links={brokenLinks} />
+                <div className="max-h-[500px] overflow-y-auto">
+                  {" "}
+                  {/* Add this wrapper div */}
+                  <BrokenLinkList links={brokenLinks} />
+                </div>
               </CardContent>
             </Card>
           </div>
