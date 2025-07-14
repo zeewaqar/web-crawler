@@ -59,8 +59,8 @@ jobs:
 
     # ── Docker build (cache) ───────────────────────────────
     - name: Build API image (amd64)
-      run: >
-        docker build
-        --platform=linux/amd64             #  ensure correct native binaries
-        -f deployments/Dockerfile.api
-        -t api:ci .
+      run: |
+        docker build \
+          --platform=linux/amd64 \
+          -f deployments/Dockerfile.api \
+          -t api:ci .
