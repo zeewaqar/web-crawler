@@ -3,7 +3,7 @@
 
 import { ReactNode, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Nav from '@/components/ui/Nav'
+import Nav, { NavProvider } from '@/components/ui/Nav'
 import { useAuth } from '@/lib/auth'
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
@@ -52,10 +52,10 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
 
   // 3) logged in → show protected UI
   return (
-    <>
+    <NavProvider>
       <Nav />
       {/* mark main content for skip-link */}
       <main id="main-content">{children}</main>
-    </>
+    </NavProvider>
   )
 }

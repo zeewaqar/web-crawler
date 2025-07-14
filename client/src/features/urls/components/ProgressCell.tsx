@@ -1,35 +1,45 @@
-"use client";
+'use client';
 
-import {useEffect, useState} from "react";
-import {Progress} from "@/components/ui/progress";
-import {Skeleton} from "@/components/ui/skeleton";
-import {apiBase} from "@/features/urls/api";
-import {useAuth} from "@/lib/auth";
+import { useEffect, useState } from 'react';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiBase } from '@/features/urls/api';
+import { useAuth } from '@/lib/auth';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   urlId: number;
-  initialStatus: "queued" | "running" | "done" | "error";
+  initialStatus: 'queued' | 'running' | 'done' | 'error';
 }
 
-export function ProgressCell({urlId, initialStatus}: Props) {
-  const {token} = useAuth();
+export function ProgressCell({ urlId, initialStatus }: Props) {
+  const { token } = useAuth();
+  const qc = useQueryClient();
   const [pct, setPct] = useState<number | null>(
-    initialStatus === "done" ? 100 : initialStatus === "error" ? 0 : null
+    initialStatus === 'done' ? 100
+      : initialStatus === 'error' ? 0
+      : null
   );
 
-  /* subscribe only while running */
   useEffect(() => {
-    if (initialStatus === "done" || initialStatus === "error") return;
+    // only listen while it's in-flight
+    if (initialStatus === 'done' || initialStatus === 'error') return;
 
     const url = new URL(`${apiBase()}/api/v1/urls/${urlId}/stream`);
-    if (token) url.searchParams.set("token", token);
+    if (token) url.searchParams.set('token', token);
 
     const es = new EventSource(url.toString());
 
-    es.addEventListener("progress", (e: MessageEvent) => {
+    es.addEventListener('progress', (e: MessageEvent) => {
       const v = Number(e.data);
-      setPct(v);
-      if (v >= 100) es.close();
+      if (v >= 100) {
+        es.close();
+        setPct(100);
+        // **<-- invalidate the list so your table refetches**
+        qc.invalidateQueries({ queryKey: ['urls'] });
+      } else {
+        setPct(v);
+      }
     });
 
     es.onerror = () => {
@@ -37,12 +47,14 @@ export function ProgressCell({urlId, initialStatus}: Props) {
       setPct(null);
     };
 
-    return () => es.close();
-  }, [urlId, initialStatus, token]);
+    return () => {
+      es.close();
+    };
+  }, [urlId, initialStatus, token, qc]);
 
-  if (initialStatus === "done")
+  if (initialStatus === 'done')
     return <span className="text-green-600">✅</span>;
-  if (initialStatus === "error")
+  if (initialStatus === 'error')
     return <span className="text-red-600">❌</span>;
   if (pct === null) return <Skeleton className="h-3 w-20" />;
 
